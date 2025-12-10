@@ -34,7 +34,7 @@ const PurchaseOrders: React.FC = () => {
     open: boolean;
     machines: Array<{ id: string; name: string; status: string; }>;
   }>({ open: false, machines: [] });
-console.log(purchaseOrders , "hello");
+
 
   // Handle toast notifications
   React.useEffect(() => {
@@ -69,15 +69,15 @@ console.log(purchaseOrders , "hello");
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const priority = formData.priority || autoCalculatePriority(formData.deliveryDate || '');
-      const newPO: PurchaseOrder = {
+    const newPO: PurchaseOrder = {
       id: editingId || crypto.randomUUID(),
-        poNumber: formData.poNumber || '',
-        poDate: formData.poDate || new Date().toISOString().split('T')[0],
-        productId: formData.productId || '',
-        quantity: formData.quantity || 0,
-        deliveryDate: formData.deliveryDate || '',
-        remarks: formData.remarks || '',
-        status: formData.status || 'pending',
+      poNumber: formData.poNumber || '',
+      poDate: formData.poDate || new Date().toISOString().split('T')[0],
+      productId: formData.productId || '',
+      quantity: formData.quantity || 0,
+      deliveryDate: formData.deliveryDate || '',
+      remarks: formData.remarks || '',
+      status: formData.status || 'pending',
       customerName: formData.customerName || '',
       customerContact: formData.customerContact || '',
       urgencyLevel: formData.urgencyLevel || 'normal',
@@ -177,17 +177,17 @@ console.log(purchaseOrders , "hello");
     const product = products.find(p => p.id === productId);
     if (product) {
       setFormData(prev => ({ ...prev, partNumber: product.partNumber }));
-      
+
       // Check for machines in maintenance
       const maintenanceMachines = product.processFlow
         .map(step => {
           const machine = machines.find(m => m.id === step.machineId);
-          return machine && (machine.status === 'maintenance' || machine.status === 'breakdown') 
+          return machine && (machine.status === 'maintenance' || machine.status === 'breakdown')
             ? { id: machine.id, name: machine.machineName, status: machine.status }
             : null;
         })
         .filter(Boolean);
-      
+
       if (maintenanceMachines.length > 0) {
         setShowMaintenanceWarning({
           open: true,
@@ -225,7 +225,7 @@ console.log(purchaseOrders , "hello");
           qualityApproved: formData.qualityApproved || false,
           priority: formData.priority || autoCalculatePriority(formData.deliveryDate),
         };
-        
+
         // First check for machine conflicts
         const { conflicts } = generateScheduleWithConflicts(
           [...purchaseOrders, tempPO],
@@ -235,7 +235,7 @@ console.log(purchaseOrders , "hello");
           holidays
         );
         const relevantConflicts = conflicts.filter(c => c.newPO.id === tempPO.id);
-        
+
         if (relevantConflicts.length > 0) {
           setConflicts(relevantConflicts);
           setPendingPO(tempPO);
@@ -246,7 +246,7 @@ console.log(purchaseOrders , "hello");
           });
           return;
         }
-        
+
         // Now check delivery feasibility with existing schedule
         const result = checkDeliveryFeasibility(
           tempPO,
@@ -256,7 +256,7 @@ console.log(purchaseOrders , "hello");
           holidays,
           scheduleItems // Pass existing schedule items
         );
-        
+
         setFeasibilityCheck({
           feasible: result.feasible,
           message: result.message,
@@ -364,7 +364,7 @@ console.log(purchaseOrders , "hello");
               <X size={20} />
             </button>
           </div>
-          
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
@@ -411,31 +411,31 @@ console.log(purchaseOrders , "hello");
                   ))}
                 </select>
               </div>
-            {/* Show required machines for selected product, with info button */}
-            {formData.productId && (
-              <div className="col-span-2 mt-2">
-                <label className="block text-xs font-medium text-gray-600 mb-1">Machines Required for Product:</label>
-                <div className="flex flex-wrap gap-2">
-                  {products.find(p => p.id === formData.productId)?.processFlow.map(step => {
-                    const machine = machines.find(m => m.id === step.machineId);
-                    if (!machine) return null;
-                    return (
-                      <span key={machine.id} className="inline-flex items-center gap-1 px-3 py-1 rounded-full border text-xs font-semibold bg-cyan-50 border-cyan-200 text-cyan-700">
-                        {machine.machineName}
-                        <button
-                          type="button"
-                          className="ml-1 text-blue-500 hover:text-blue-700"
-                          onClick={() => setShowMachinePOs({ machineId: machine.id, open: true })}
-                          title="Show POs using this machine"
-                        >
-                          <Info size={14} />
-                        </button>
-                      </span>
-                    );
-                  })}
+              {/* Show required machines for selected product, with info button */}
+              {formData.productId && (
+                <div className="col-span-2 mt-2">
+                  <label className="block text-xs font-medium text-gray-600 mb-1">Machines Required for Product:</label>
+                  <div className="flex flex-wrap gap-2">
+                    {products.find(p => p.id === formData.productId)?.processFlow.map(step => {
+                      const machine = machines.find(m => m.id === step.machineId);
+                      if (!machine) return null;
+                      return (
+                        <span key={machine.id} className="inline-flex items-center gap-1 px-3 py-1 rounded-full border text-xs font-semibold bg-cyan-50 border-cyan-200 text-cyan-700">
+                          {machine.machineName}
+                          <button
+                            type="button"
+                            className="ml-1 text-blue-500 hover:text-blue-700"
+                            onClick={() => setShowMachinePOs({ machineId: machine.id, open: true })}
+                            title="Show POs using this machine"
+                          >
+                            <Info size={14} />
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -518,7 +518,7 @@ console.log(purchaseOrders , "hello");
               >
                 Check Feasibility
               </button>
-              
+
               <button
                 type="submit"
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
@@ -572,12 +572,11 @@ console.log(purchaseOrders , "hello");
               </button>
             </div>
             <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200 flex items-center gap-4">
-              <span className={`px-3 py-1 rounded-full text-lg font-bold ${
-                pendingPO?.priority === 'urgent' ? 'bg-red-100 text-red-800' :
-                pendingPO?.priority === 'high' ? 'bg-orange-100 text-orange-800' :
-                pendingPO?.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                'bg-green-100 text-green-800'
-              }`}>
+              <span className={`px-3 py-1 rounded-full text-lg font-bold ${pendingPO?.priority === 'urgent' ? 'bg-red-100 text-red-800' :
+                  pendingPO?.priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                    pendingPO?.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                      'bg-green-100 text-green-800'
+                }`}>
                 {pendingPO?.priority?.toUpperCase()}
               </span>
               <span className="font-semibold text-blue-800">New PO: {pendingPO?.poNumber}</span>
@@ -600,12 +599,11 @@ console.log(purchaseOrders , "hello");
                     <tr key={idx} className="border-b">
                       <td className="px-3 py-2 font-semibold text-blue-700">{conflict.conflictingPO.poNumber}</td>
                       <td className="px-3 py-2">
-                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${
-                          conflict.conflictingPO.priority === 'urgent' ? 'bg-red-100 text-red-800' :
-                          conflict.conflictingPO.priority === 'high' ? 'bg-orange-100 text-orange-800' :
-                          conflict.conflictingPO.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-green-100 text-green-800'
-                        }`}>
+                        <span className={`px-2 py-1 rounded-full text-xs font-bold ${conflict.conflictingPO.priority === 'urgent' ? 'bg-red-100 text-red-800' :
+                            conflict.conflictingPO.priority === 'high' ? 'bg-orange-100 text-orange-800' :
+                              conflict.conflictingPO.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-green-100 text-green-800'
+                          }`}>
                           {conflict.conflictingPO.priority.toUpperCase()}
                         </span>
                       </td>
@@ -737,24 +735,23 @@ console.log(purchaseOrders , "hello");
             <div className="flex flex-col items-center text-center mb-6">
               <div className="mb-4">
                 <svg width="48" height="48" fill="none" viewBox="0 0 24 24">
-                  <path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>
               <h2 className="text-2xl font-bold text-amber-700 mb-2">Machine Maintenance Warning</h2>
               <p className="text-gray-700 mb-4">
-                The following machines required for this product are currently in maintenance or breakdown status. 
+                The following machines required for this product are currently in maintenance or breakdown status.
                 You need to change their status to 'active' before proceeding.
               </p>
             </div>
-            
+
             <div className="space-y-4 mb-6">
               {showMaintenanceWarning.machines.map(machine => (
                 <div key={machine.id} className="flex items-center justify-between p-4 bg-amber-50 rounded-lg border border-amber-200">
                   <div className="flex items-center gap-3">
-                    <span className={`px-3 py-1 rounded-full text-sm font-bold ${
-                      machine.status === 'maintenance' ? 'bg-amber-100 text-amber-800 border border-amber-300' :
-                      'bg-red-100 text-red-800 border border-red-300'
-                    }`}>
+                    <span className={`px-3 py-1 rounded-full text-sm font-bold ${machine.status === 'maintenance' ? 'bg-amber-100 text-amber-800 border border-amber-300' :
+                        'bg-red-100 text-red-800 border border-red-300'
+                      }`}>
                       {machine.status.toUpperCase()}
                     </span>
                     <span className="font-semibold text-gray-800">{machine.name}</span>
@@ -779,7 +776,7 @@ console.log(purchaseOrders , "hello");
                 </div>
               ))}
             </div>
-            
+
             <div className="flex justify-center">
               <button
                 onClick={() => setShowMaintenanceWarning({ open: false, machines: [] })}

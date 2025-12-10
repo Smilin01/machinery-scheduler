@@ -1,29 +1,29 @@
 import React, { useState } from 'react';
 import { useApp } from '../../contexts/AppContext';
 import { Machine } from '../../types';
-import { Plus, Edit2, Trash2, Save, X, Copy, Download, Upload } from 'lucide-react';
+import { Plus, Edit2, Trash2, Save, X, Copy, Download, Upload, Activity, Clock, Zap, MapPin } from 'lucide-react';
 
 const MachineMaster: React.FC = () => {
   const { machines, addMachine, updateMachine, deleteMachine, purchaseOrders, products, deletePurchaseOrder } = useApp();
-  
+
   // Helper function to calculate working hours from shift timing
   const calculateWorkingHoursFromShift = (shiftTiming: string): number => {
     if (shiftTiming === 'Custom') return 8; // Default for custom shifts
-    
+
     const [start, end] = shiftTiming.split('-');
     if (!start || !end) return 8;
-    
+
     const startTime = new Date(`2000-01-01T${start}:00`);
     const endTime = new Date(`2000-01-01T${end}:00`);
-    
+
     // Handle overnight shifts
     if (endTime < startTime) {
       endTime.setDate(endTime.getDate() + 1);
     }
-    
+
     const diffMs = endTime.getTime() - startTime.getTime();
     const diffHours = diffMs / (1000 * 60 * 60);
-    
+
     return Math.round(diffHours * 10) / 10; // Round to 1 decimal place
   };
 
@@ -65,13 +65,12 @@ const MachineMaster: React.FC = () => {
     reader.onload = (e) => {
       const text = e.target?.result as string;
       const lines = text.split('\n');
-      const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
-      
+
       const importedMachines: Partial<Machine>[] = [];
-      
+
       for (let i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue;
-        
+
         const values = lines[i].split(',').map(v => v.replace(/"/g, '').trim());
         const machine: Partial<Machine> = {
           machineName: values[0] || '',
@@ -90,12 +89,12 @@ const MachineMaster: React.FC = () => {
           },
           problems: []
         };
-        
+
         if (machine.machineName) {
           importedMachines.push(machine);
         }
       }
-      
+
       // Add imported machines
       importedMachines.forEach(machine => {
         const newMachine: Machine = {
@@ -115,15 +114,15 @@ const MachineMaster: React.FC = () => {
         };
         addMachine(newMachine);
       });
-      
+
       alert(`Successfully imported ${importedMachines.length} machines`);
     };
     reader.readAsText(file);
-    
+
     // Reset input
     event.target.value = '';
   };
-  
+
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<Machine & { associatedProcesses?: { productId: string; stepId: string }[] }>>({
@@ -144,7 +143,7 @@ const MachineMaster: React.FC = () => {
     problems: [],
     associatedProcesses: [], // NEW
   });
-  const [manualProcessInput, setManualProcessInput] = useState('');
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -157,7 +156,7 @@ const MachineMaster: React.FC = () => {
         machineName: formData.machineName || '',
         machineType: formData.machineType || '',
         capacity: formData.capacity || '',
-                 workingHours: calculateWorkingHoursFromShift(formData.shiftTiming || '09:00-17:00'),
+        workingHours: calculateWorkingHoursFromShift(formData.shiftTiming || '09:00-17:00'),
         shiftTiming: formData.shiftTiming || '09:00-17:00',
         status: formData.status || 'active',
         location: formData.location || '',
@@ -222,357 +221,286 @@ const MachineMaster: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'active': return 'bg-green-100 text-green-800';
-      case 'maintenance': return 'bg-amber-100 text-amber-800';
-      case 'inactive': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'active': return 'bg-green-50 text-green-700 border-green-100';
+      case 'maintenance': return 'bg-amber-50 text-amber-700 border-amber-100';
+      case 'inactive': return 'bg-gray-50 text-gray-700 border-gray-100';
+      case 'breakdown': return 'bg-red-50 text-red-700 border-red-100';
+      default: return 'bg-gray-50 text-gray-700 border-gray-100';
     }
   };
 
   return (
     <div>
-             <div className="flex justify-between items-center mb-6">
-         <h2 className="text-xl font-semibold text-gray-900">Machine Master</h2>
-         <div className="flex items-center gap-3">
-           <button
-             onClick={exportMachines}
-             className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
-           >
-             <Download size={16} />
-             Export CSV
-           </button>
-           <label className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-md hover:bg-amber-700 transition-colors cursor-pointer">
-             <Upload size={16} />
-             Import CSV
-             <input
-               type="file"
-               accept=".csv"
-               onChange={importMachines}
-               className="hidden"
-             />
-           </label>
-           <button
-             onClick={() => setIsAdding(true)}
-             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-           >
-             <Plus size={16} />
-             Add Machine
-           </button>
-         </div>
-       </div>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900">Machine Inventory</h2>
+          <p className="text-sm text-gray-500">Manage production equipment and status</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={exportMachines}
+            className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors text-sm font-medium"
+          >
+            <Download size={16} />
+            Export
+          </button>
+          <label className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer text-sm font-medium">
+            <Upload size={16} />
+            Import
+            <input
+              type="file"
+              accept=".csv"
+              onChange={importMachines}
+              className="hidden"
+            />
+          </label>
+          <button
+            onClick={() => setIsAdding(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-[#F24E1E] text-white rounded-xl hover:bg-[#d63d12] transition-colors shadow-lg shadow-orange-200 text-sm font-medium"
+          >
+            <Plus size={16} />
+            Add Machine
+          </button>
+        </div>
+      </div>
 
       {isAdding && (
-        <div className="bg-gray-50 rounded-lg p-6 mb-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-medium text-gray-900">
-              {editingId ? 'Edit Machine' : 'Add New Machine'}
-            </h3>
-            <button
-              onClick={resetForm}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <X size={20} />
-            </button>
-          </div>
-          
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-white p-6 rounded-xl border border-blue-100 shadow-md">
-            <div className="space-y-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Machine Name
-              </label>
-              <input
-                type="text"
-                value={formData.machineName}
-                onChange={(e) => setFormData(prev => ({ ...prev, machineName: e.target.value }))}
-                className="w-full px-3 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-blue-50/50 text-gray-900 font-medium shadow-sm"
-                required
-              />
-            </div>
-
-            <div className="space-y-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Machine Type
-              </label>
-              <input
-                type="text"
-                value={formData.machineType}
-                onChange={(e) => setFormData(prev => ({ ...prev, machineType: e.target.value }))}
-                className="w-full px-3 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-blue-50/50 text-gray-900 font-medium shadow-sm"
-                required
-              />
-            </div>
-
-            <div className="space-y-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Shift Timing
-              </label>
-              <select
-                value={formData.shiftTiming}
-                onChange={(e) => {
-                  const newShiftTiming = e.target.value;
-                  setFormData(prev => ({ 
-                    ...prev, 
-                    shiftTiming: newShiftTiming,
-                    workingHours: calculateWorkingHoursFromShift(newShiftTiming)
-                  }));
-                }}
-                className="w-full px-3 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-blue-50/50 text-gray-900 font-medium shadow-sm"
-                required
-              >
-                <option value="09:00-17:00">09:00-17:00</option>
-                <option value="08:00-16:00">08:00-16:00</option>
-                <option value="16:00-00:00">16:00-00:00</option>
-                <option value="00:00-08:00">00:00-08:00</option>
-                <option value="Custom">Custom</option>
-              </select>
-            </div>
-
-            <div className="space-y-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Status
-              </label>
-              <select
-                value={formData.status}
-                onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as Machine['status'] }))}
-                className="w-full px-3 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-blue-50/50 text-gray-900 font-medium shadow-sm"
-              >
-                <option value="active">Active</option>
-                <option value="maintenance">Maintenance</option>
-                <option value="inactive">Inactive</option>
-                <option value="idle">Idle</option>
-                <option value="breakdown">Breakdown</option>
-              </select>
-            </div>
-
-            <div className="space-y-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Location
-              </label>
-              <input
-                type="text"
-                value={formData.location}
-                onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                className="w-full px-3 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-blue-50/50 text-gray-900 font-medium shadow-sm"
-              />
-            </div>
-
-            <div className="space-y-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Efficiency (%)
-              </label>
-              <input
-                type="number"
-                value={formData.efficiency}
-                onChange={(e) => setFormData(prev => ({ ...prev, efficiency: Number(e.target.value) }))}
-                className="w-full px-3 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-blue-50/50 text-gray-900 font-medium shadow-sm"
-                min="0"
-                max="100"
-              />
-            </div>
-
-            <div className="space-y-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Last Maintenance
-              </label>
-              <input
-                type="date"
-                value={formData.lastMaintenance}
-                onChange={(e) => setFormData(prev => ({ ...prev, lastMaintenance: e.target.value }))}
-                className="w-full px-3 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-blue-50/50 text-gray-900 font-medium shadow-sm"
-              />
-            </div>
-
-            <div className="space-y-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Next Maintenance
-              </label>
-              <input
-                type="date"
-                value={formData.nextMaintenance}
-                onChange={(e) => setFormData(prev => ({ ...prev, nextMaintenance: e.target.value }))}
-                className="w-full px-3 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-blue-50/50 text-gray-900 font-medium shadow-sm"
-              />
-            </div>
-
-            {/* Remove Dimensions and Weight fields, keep only Power (kW) */}
-            <div className="space-y-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Power (kW)
-              </label>
-              <input
-                type="text"
-                value={formData.specifications?.power || ''}
-                onChange={(e) => setFormData(prev => ({
-                  ...prev,
-                  specifications: {
-                    power: e.target.value,
-                    dimensions: '', // removed from UI, but keep for type compatibility
-                    weight: '' // removed from UI, but keep for type compatibility
-                  }
-                }))}
-                className="w-full px-3 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-blue-50/50 text-gray-900 font-medium shadow-sm"
-              />
-            </div>
-
-            {/* Associated Processes UI: Only manual entry, no suggestions or dropdowns */}
-            <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Associated Processes
-              </label>
-              <div className="flex gap-2 mb-2">
-                <input
-                  type="text"
-                  value={manualProcessInput}
-                  onChange={e => setManualProcessInput(e.target.value)}
-                  placeholder="Add process (e.g. Cleaning, Welding, etc.)"
-                  className="w-full px-3 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-blue-50/50 text-gray-900 font-medium shadow-sm"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (manualProcessInput.trim()) {
-                      setFormData(prev => ({
-                        ...prev,
-                        associatedProcesses: [
-                          ...(prev.associatedProcesses || []),
-                          { productId: '', stepId: manualProcessInput.trim() }
-                        ]
-                      }));
-                      setManualProcessInput('');
-                    }
-                  }}
-                  className="flex items-center gap-1 px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 text-sm font-semibold shadow"
-                >
-                  <Plus size={16} /> Add
-                </button>
-              </div>
-              {/* Show all associated processes (manual only) with remove option */}
-              <div className="flex flex-wrap gap-2 mt-2">
-                {(formData.associatedProcesses || []).map((ap, idx) => (
-                  <span key={idx} className="inline-flex items-center gap-1 px-3 py-1 rounded-full border text-xs font-semibold bg-cyan-50 border-cyan-200 text-cyan-700 shadow">
-                    {ap.stepId}
-                    <button
-                      type="button"
-                      className="ml-1 text-red-500 hover:text-red-700"
-                      onClick={() => setFormData(prev => ({
-                        ...prev,
-                        associatedProcesses: (prev.associatedProcesses || []).filter((_, i) => i !== idx)
-                      }))}
-                      title="Remove"
-                    >
-                      <X size={14} />
-                    </button>
-                  </span>
-                ))}
-              </div>
-              <p className="text-xs text-gray-500 mt-1">Add all processes (manual entry) this machine is typically used for. No suggestions, only manual input.</p>
-            </div>
-
-            <div className="flex items-end">
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white z-10">
+              <h3 className="text-lg font-bold text-gray-900">
+                {editingId ? 'Edit Machine' : 'Add New Machine'}
+              </h3>
               <button
-                type="submit"
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                onClick={resetForm}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
               >
-                <Save size={16} />
-                {editingId ? 'Update' : 'Add'} Machine
+                <X size={24} />
               </button>
             </div>
-          </form>
+
+            <form onSubmit={handleSubmit} className="p-6 space-y-8">
+              {/* Basic Information */}
+              <div>
+                <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 flex items-center gap-2">
+                  <Activity size={16} className="text-[#F24E1E]" />
+                  Basic Information
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Machine Name</label>
+                    <input
+                      type="text"
+                      value={formData.machineName}
+                      onChange={(e) => setFormData(prev => ({ ...prev, machineName: e.target.value }))}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F24E1E]/20 focus:border-[#F24E1E] transition-all"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Type</label>
+                    <input
+                      type="text"
+                      value={formData.machineType}
+                      onChange={(e) => setFormData(prev => ({ ...prev, machineType: e.target.value }))}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F24E1E]/20 focus:border-[#F24E1E] transition-all"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Capacity</label>
+                    <input
+                      type="text"
+                      value={formData.capacity}
+                      onChange={(e) => setFormData(prev => ({ ...prev, capacity: e.target.value }))}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F24E1E]/20 focus:border-[#F24E1E] transition-all"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</label>
+                    <select
+                      value={formData.status}
+                      onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as Machine['status'] }))}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F24E1E]/20 focus:border-[#F24E1E] transition-all"
+                    >
+                      <option value="active">Active</option>
+                      <option value="maintenance">Maintenance</option>
+                      <option value="breakdown">Breakdown</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Operational Details */}
+              <div>
+                <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 flex items-center gap-2">
+                  <Clock size={16} className="text-[#F24E1E]" />
+                  Operational Details
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Shift Timing</label>
+                    <select
+                      value={formData.shiftTiming}
+                      onChange={(e) => setFormData(prev => ({ ...prev, shiftTiming: e.target.value }))}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F24E1E]/20 focus:border-[#F24E1E] transition-all"
+                    >
+                      <option value="09:00-17:00">Day Shift (9AM - 5PM)</option>
+                      <option value="17:00-01:00">Evening Shift (5PM - 1AM)</option>
+                      <option value="01:00-09:00">Night Shift (1AM - 9AM)</option>
+                      <option value="Custom">Custom</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Efficiency (%)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={formData.efficiency}
+                      onChange={(e) => setFormData(prev => ({ ...prev, efficiency: parseInt(e.target.value) }))}
+                      className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F24E1E]/20 focus:border-[#F24E1E] transition-all"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Power Consumption (kW)</label>
+                    <div className="relative">
+                      <Zap size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="text"
+                        value={formData.specifications?.power}
+                        onChange={(e) => setFormData(prev => ({
+                          ...prev,
+                          specifications: { ...prev.specifications!, power: e.target.value }
+                        }))}
+                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F24E1E]/20 focus:border-[#F24E1E] transition-all"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider">Location</label>
+                    <div className="relative">
+                      <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="text"
+                        value={formData.location}
+                        onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                        className="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F24E1E]/20 focus:border-[#F24E1E] transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Associated Processes (Read-only for now, or simple list) */}
+              <div>
+                <h4 className="text-sm font-bold text-gray-900 uppercase tracking-wider mb-4 flex items-center gap-2">
+                  <Activity size={16} className="text-[#F24E1E]" />
+                  Associated Processes
+                </h4>
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 text-sm text-gray-500">
+                  <p>Processes are automatically linked when you assign this machine to a product step.</p>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={resetForm}
+                  className="px-6 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2.5 bg-[#F24E1E] text-white rounded-xl hover:bg-[#d63d12] transition-colors shadow-lg shadow-orange-200 font-medium flex items-center gap-2"
+                >
+                  <Save size={18} />
+                  Save Machine
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50/50 border-b border-gray-100">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Machine Name
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Type
-                </th>
-                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                   Shift Timing (Hours)
-                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Process
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Machine Name</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Type</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Efficiency</th>
+                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Shift</th>
+                <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {machines.map((machine) => {
-                // Find all products and process steps using this machine
-                const processUsages = products.flatMap(product =>
-                  product.processFlow
-                    .filter(step => step.machineId === machine.id)
-                    .map(step => ({ productName: product.productName, stepName: step.stepName }))
-                );
-                return (
-                  <tr key={machine.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {machine.machineName}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {machine.machineType}
-                    </td>
-                                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {machine.shiftTiming}
-                        <br />
-                        <span className="text-xs text-gray-400">
-                          ({calculateWorkingHoursFromShift(machine.shiftTiming)}h)
-                        </span>
-                      </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(machine.status)}`}> 
-                        {machine.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {processUsages.length > 0 ? (
-                        <ul className="list-disc ml-4">
-                          {processUsages.map((usage, idx) => (
-                            <li key={idx}>
-                              <span className="font-semibold">{usage.productName}</span>: {usage.stepName}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleEdit(machine)}
-                          className="text-blue-600 hover:text-blue-800"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDuplicate(machine)}
-                          className="text-emerald-600 hover:text-emerald-800"
-                          title="Duplicate Machine"
-                        >
-                          <Copy size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteMachine(machine.id)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+            <tbody className="divide-y divide-gray-100">
+              {machines.map((machine) => (
+                <tr key={machine.id} className="hover:bg-gray-50/50 transition-colors group">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="font-medium text-gray-900">{machine.machineName}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {machine.machineType}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(machine.status)}`}>
+                      {machine.status.charAt(0).toUpperCase() + machine.status.slice(1)}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <div className="flex items-center gap-2">
+                      <div className="w-16 bg-gray-200 rounded-full h-1.5">
+                        <div
+                          className={`h-1.5 rounded-full ${machine.efficiency >= 90 ? 'bg-green-500' : machine.efficiency >= 70 ? 'bg-yellow-500' : 'bg-red-500'}`}
+                          style={{ width: `${machine.efficiency}%` }}
+                        ></div>
                       </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                      <span>{machine.efficiency}%</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {machine.shiftTiming}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => handleDuplicate(machine)}
+                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        title="Duplicate"
+                      >
+                        <Copy size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleEdit(machine)}
+                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        title="Edit"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteMachine(machine.id)}
+                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {machines.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                    <Activity size={48} className="mx-auto mb-3 opacity-20" />
+                    <p>No machines found. Add one to get started.</p>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

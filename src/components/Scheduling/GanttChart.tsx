@@ -72,12 +72,12 @@ const GanttChart: React.FC<GanttChartProps> = ({ scheduleItems, onItemClick }) =
     const { start, end } = parseShiftTiming(shiftTiming);
     const startTime = new Date(`2000-01-01T${start}:00`);
     const endTime = new Date(`2000-01-01T${end}:00`);
-    
+
     // Handle overnight shifts
     if (endTime < startTime) {
       endTime.setDate(endTime.getDate() + 1);
     }
-    
+
     const diffMs = endTime.getTime() - startTime.getTime();
     const diffHours = diffMs / (1000 * 60 * 60);
     return Math.round(diffHours * 10) / 10;
@@ -91,37 +91,37 @@ const GanttChart: React.FC<GanttChartProps> = ({ scheduleItems, onItemClick }) =
     const { start: shiftStart, end: shiftEnd } = parseShiftTiming(machine.shiftTiming);
     const workingHoursPerDay = getWorkingHoursFromShift(machine.shiftTiming);
     const workingMinutesPerDay = workingHoursPerDay * 60;
-    
+
     const itemStart = new Date(item.startDate);
     const itemEnd = new Date(item.endDate);
     const totalDurationMinutes = item.allocatedTime;
-    
+
     const segments = [];
     let remainingTime = totalDurationMinutes;
     let currentDate = new Date(itemStart);
-    
+
     while (remainingTime > 0 && currentDate <= itemEnd) {
       // Skip weekends and holidays
       const dateStr = currentDate.toISOString().split('T')[0];
       const isWeekend = currentDate.getDay() === 0 || currentDate.getDay() === 6;
       const isHolidayDate = holidays.includes(dateStr);
-      
+
       if (isWeekend || isHolidayDate) {
         currentDate.setDate(currentDate.getDate() + 1);
         continue;
       }
-      
+
       // Calculate segment for this day
       const segmentDuration = Math.min(remainingTime, workingMinutesPerDay);
-      
+
       // Create segment start and end times based on shift timing
       const segmentStart = new Date(currentDate);
       const [startHour, startMinute] = shiftStart.split(':').map(Number);
       segmentStart.setHours(startHour, startMinute, 0, 0);
-      
+
       const segmentEnd = new Date(segmentStart);
       segmentEnd.setMinutes(segmentEnd.getMinutes() + segmentDuration);
-      
+
       segments.push({
         ...item,
         id: `${item.id}-${segments.length}`,
@@ -132,11 +132,11 @@ const GanttChart: React.FC<GanttChartProps> = ({ scheduleItems, onItemClick }) =
         originalId: item.id,
         segmentIndex: segments.length
       });
-      
+
       remainingTime -= segmentDuration;
       currentDate.setDate(currentDate.getDate() + 1);
     }
-    
+
     return segments.length > 0 ? segments : [item];
   };
 
@@ -144,31 +144,20 @@ const GanttChart: React.FC<GanttChartProps> = ({ scheduleItems, onItemClick }) =
     const itemStart = new Date(item.startDate);
     const itemEnd = new Date(item.endDate);
     const totalDuration = rangeEnd.getTime() - rangeStart.getTime();
-    
+
     const left = ((itemStart.getTime() - rangeStart.getTime()) / totalDuration) * 100;
     const width = ((itemEnd.getTime() - itemStart.getTime()) / totalDuration) * 100;
-    
-    return { left: Math.max(0, left), width: Math.max(1, width) };
-  };
 
-  const getItemColor = (item: ScheduleItem) => {
-    const product = products.find(p => p.id === item.productId);
-    switch (product?.priority) {
-      case 'urgent': return 'bg-red-500';
-      case 'high': return 'bg-orange-500';
-      case 'medium': return 'bg-blue-500';
-      case 'low': return 'bg-green-500';
-      default: return 'bg-gray-500';
-    }
+    return { left: Math.max(0, left), width: Math.max(1, width) };
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed': return 'bg-green-600';
-      case 'in-progress': return 'bg-blue-600';
-      case 'delayed': return 'bg-red-600';
-      case 'paused': return 'bg-yellow-600';
-      default: return 'bg-gray-600';
+      case 'completed': return 'bg-emerald-500 border-emerald-600';
+      case 'in-progress': return 'bg-blue-500 border-blue-600';
+      case 'delayed': return 'bg-red-500 border-red-600';
+      case 'paused': return 'bg-amber-500 border-amber-600';
+      default: return 'bg-gray-500 border-gray-600';
     }
   };
 
@@ -178,14 +167,14 @@ const GanttChart: React.FC<GanttChartProps> = ({ scheduleItems, onItemClick }) =
 
   const getTotalOvertimeHours = (item: ScheduleItem) => {
     if (!item.overtimeRecords) return 0;
-    return item.overtimeRecords.reduce((total, record) => 
+    return item.overtimeRecords.reduce((total, record) =>
       total + (record.actualOvertimeHours || record.plannedOvertimeHours), 0
     );
   };
 
   const navigateDate = (direction: 'prev' | 'next') => {
     const newDate = new Date(currentDate);
-    
+
     switch (viewMode) {
       case 'day':
         newDate.setDate(newDate.getDate() + (direction === 'next' ? 1 : -1));
@@ -197,7 +186,7 @@ const GanttChart: React.FC<GanttChartProps> = ({ scheduleItems, onItemClick }) =
         newDate.setMonth(newDate.getMonth() + (direction === 'next' ? 1 : -1));
         break;
     }
-    
+
     setCurrentDate(newDate);
   };
 
@@ -215,68 +204,67 @@ const GanttChart: React.FC<GanttChartProps> = ({ scheduleItems, onItemClick }) =
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
       {/* Header */}
       <div className="p-6 border-b border-gray-100">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
               <Calendar size={20} className="text-gray-400" />
-              <h3 className="text-lg font-semibold text-gray-900">Production Gantt Chart</h3>
+              <h3 className="text-lg font-bold text-gray-900">Gantt Chart</h3>
             </div>
-            
-            <div className="flex items-center space-x-2">
+
+            <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-100">
               <button
                 onClick={() => navigateDate('prev')}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-1.5 hover:bg-white hover:shadow-sm rounded-md transition-all text-gray-500 hover:text-gray-900"
               >
                 <ChevronLeft size={16} />
               </button>
-              <span className="text-sm font-medium text-gray-700 min-w-[120px] text-center">
+              <span className="text-sm font-medium text-gray-700 min-w-[140px] text-center px-2">
                 {viewMode === 'day' && currentDate.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })}
                 {viewMode === 'week' && `Week of ${rangeStart.toLocaleDateString([], { month: 'short', day: 'numeric' })}`}
                 {viewMode === 'month' && currentDate.toLocaleDateString([], { month: 'long', year: 'numeric' })}
               </span>
               <button
                 onClick={() => navigateDate('next')}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-1.5 hover:bg-white hover:shadow-sm rounded-md transition-all text-gray-500 hover:text-gray-900"
               >
                 <ChevronRight size={16} />
               </button>
             </div>
           </div>
-          
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
+
+          <div className="flex items-center gap-4">
+            <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-100">
               {['day', 'week', 'month'].map((mode) => (
                 <button
                   key={mode}
                   onClick={() => setViewMode(mode as any)}
-                  className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                    viewMode === mode
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${viewMode === mode
+                      ? 'bg-white text-[#F24E1E] shadow-sm'
+                      : 'text-gray-500 hover:text-gray-900'
+                    }`}
                 >
                   {mode.charAt(0).toUpperCase() + mode.slice(1)}
                 </button>
               ))}
             </div>
-            
-            <div className="flex items-center space-x-2">
+
+            <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-100">
               <button
                 onClick={() => setZoomLevel(Math.max(0.5, zoomLevel - 0.25))}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-1.5 hover:bg-white hover:shadow-sm rounded-md transition-all text-gray-500 hover:text-gray-900"
                 title="Zoom out"
               >
                 <ZoomOut size={16} />
               </button>
-              <span className="text-sm text-gray-600 min-w-[40px] text-center">
+              <span className="text-xs font-medium text-gray-500 min-w-[40px] text-center">
                 {Math.round(zoomLevel * 100)}%
               </span>
               <button
                 onClick={() => setZoomLevel(Math.min(2, zoomLevel + 0.25))}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-1.5 hover:bg-white hover:shadow-sm rounded-md transition-all text-gray-500 hover:text-gray-900"
                 title="Zoom in"
               >
                 <ZoomIn size={16} />
@@ -286,12 +274,12 @@ const GanttChart: React.FC<GanttChartProps> = ({ scheduleItems, onItemClick }) =
         </div>
       </div>
 
-      {/* Gantt Chart */}
-      <div className="overflow-x-auto" style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'top left' }}>
-        <div className="min-w-[800px]">
+      {/* Gantt Chart Area */}
+      <div className="overflow-x-auto custom-scrollbar" style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'top left' }}>
+        <div className="min-w-[1000px]">
           {/* Time Header */}
-          <div className="flex border-b border-gray-200 bg-gray-50">
-            <div className="w-48 p-3 border-r border-gray-200 font-medium text-gray-700 sticky left-0 bg-gray-50 z-10">
+          <div className="flex border-b border-gray-200 bg-gray-50/50">
+            <div className="w-56 p-3 border-r border-gray-200 font-semibold text-xs text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-20">
               Machine / Resource
             </div>
             <div className="flex-1 flex">
@@ -301,13 +289,10 @@ const GanttChart: React.FC<GanttChartProps> = ({ scheduleItems, onItemClick }) =
                 return (
                   <div
                     key={index}
-                    className={`flex-1 p-2 border-r border-gray-200 text-xs text-center min-w-[80px] ${holiday ? 'bg-red-50 relative' : ''}`}
+                    className={`flex-1 p-2 border-r border-gray-100 text-xs text-center min-w-[80px] font-medium text-gray-500 ${holiday ? 'bg-red-50/50' : ''}`}
                     title={holiday ? 'Holiday' : ''}
                   >
                     {formatTimeSlot(slot)}
-                    {holiday && (
-                      <div className="absolute inset-0 bg-red-100 opacity-30 pointer-events-none" style={{zIndex:0}} />
-                    )}
                   </div>
                 );
               })}
@@ -317,41 +302,40 @@ const GanttChart: React.FC<GanttChartProps> = ({ scheduleItems, onItemClick }) =
           {/* Machine Rows */}
           {machines.map((machine) => {
             const machineItems = scheduleItems.filter(item => item.machineId === machine.id);
-            
+
             return (
-              <div key={machine.id} className="flex border-b border-gray-100 hover:bg-gray-50">
-                <div className="w-48 p-3 border-r border-gray-200 sticky left-0 bg-white z-10">
+              <div key={machine.id} className="flex border-b border-gray-100 hover:bg-gray-50/30 transition-colors">
+                <div className="w-56 p-4 border-r border-gray-200 sticky left-0 bg-white z-10 group">
                   <div>
-                    <p className="font-medium text-gray-900">{machine.machineName}</p>
-                    <p className="text-xs text-gray-500">{machine.machineType}</p>
-                    <div className="flex items-center mt-1">
-                      <div className={`w-2 h-2 rounded-full mr-2 ${
-                        machine.status === 'active' ? 'bg-green-500' :
-                        machine.status === 'maintenance' ? 'bg-amber-500' :
-                        machine.status === 'breakdown' ? 'bg-red-500' :
-                        'bg-gray-500'
-                      }`} />
-                      <span className="text-xs text-gray-600 capitalize">{machine.status}</span>
+                    <p className="font-semibold text-sm text-gray-900 group-hover:text-[#F24E1E] transition-colors">{machine.machineName}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{machine.machineType}</p>
+                    <div className="flex items-center mt-2">
+                      <div className={`w-1.5 h-1.5 rounded-full mr-2 ${machine.status === 'active' ? 'bg-emerald-500' :
+                          machine.status === 'maintenance' ? 'bg-amber-500' :
+                            machine.status === 'breakdown' ? 'bg-red-500' :
+                              'bg-gray-400'
+                        }`} />
+                      <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">{machine.status}</span>
                     </div>
                   </div>
                 </div>
-                
-                <div className="flex-1 relative h-16 bg-white">
-                  {/* Time Grid */}
+
+                <div className="flex-1 relative h-20 bg-white">
+                  {/* Time Grid Lines */}
                   {timeSlots.map((_, index) => (
                     <div
                       key={index}
-                      className="absolute top-0 bottom-0 border-r border-gray-100"
+                      className="absolute top-0 bottom-0 border-r border-gray-50"
                       style={{ left: `${(index / timeSlots.length) * 100}%` }}
                     />
                   ))}
-                  
-                  {/* Schedule Items - Split by Shift */}
+
+                  {/* Schedule Items */}
                   {machineItems.flatMap(item => splitItemByShift(item)).map((item, index) => {
                     const position = getItemPosition(item);
                     const product = products.find(p => p.id === item.productId);
                     const po = purchaseOrders.find(p => p.id === item.poId);
-                    // Use item progress if available, otherwise calculate dynamically
+
                     let progress = item.progress !== undefined ? item.progress : 0;
                     if (progress === 0) {
                       let start = new Date(item.actualStartTime || item.startDate);
@@ -361,53 +345,37 @@ const GanttChart: React.FC<GanttChartProps> = ({ scheduleItems, onItemClick }) =
                       else if (now >= end) progress = 100;
                       else progress = Math.round(((now.getTime() - start.getTime()) / (end.getTime() - start.getTime())) * 100);
                     }
-                    
-                    // Add visual indicator for segmented tasks
+
                     const isSegmented = (item as any).isSegment;
                     const segmentIndex = (item as any).segmentIndex;
-                    
+
                     return (
                       <div
                         key={`${item.id}-${index}`}
-                        className={`absolute top-1 bottom-1 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-lg hover:z-10 ${
-                          getStatusColor(item.status)
-                        } ${isSegmented ? 'border-2 border-white border-opacity-30' : ''} ${
-                          hasOvertime(item) ? 'ring-2 ring-orange-400 ring-opacity-60' : ''
-                        }`}
+                        className={`absolute top-2 bottom-2 rounded-md cursor-pointer transition-all duration-200 hover:shadow-md hover:z-20 border-l-4 ${getStatusColor(item.status)
+                          } ${isSegmented ? 'opacity-90' : ''} ${hasOvertime(item) ? 'ring-2 ring-orange-400 ring-offset-1' : ''
+                          }`}
                         style={{
                           left: `${position.left}%`,
                           width: `${position.width}%`,
-                          minWidth: '60px'
+                          minWidth: '40px'
                         }}
                         onClick={() => onItemClick?.(item)}
-                        title={`${product?.productName} - ${po?.poNumber}\nStep ${item.processStep}\nDuration: ${item.allocatedTime} min\nStatus: ${item.status}${isSegmented ? `\nSegment: ${segmentIndex + 1}` : ''}${hasOvertime(item) ? `\n🕒 OVERTIME: ${getTotalOvertimeHours(item)} hours planned` : ''}`}
                       >
-                        <div className="p-2 text-white text-xs h-full flex flex-col justify-center">
-                          <div className="font-medium truncate flex items-center">
+                        <div className="px-2 py-1 text-white text-xs h-full flex flex-col justify-center overflow-hidden">
+                          <div className="font-semibold truncate flex items-center gap-1">
                             {product?.productName || 'Unknown'}
-                            {isSegmented && (
-                              <span className="ml-1 text-xs opacity-75">({segmentIndex + 1})</span>
-                            )}
-                            {hasOvertime(item) && (
-                              <Clock size={10} className="ml-1 text-orange-300" />
-                            )}
+                            {isSegmented && <span className="opacity-75 text-[10px]">({segmentIndex + 1})</span>}
                           </div>
-                          <div className="text-xs opacity-90 truncate">
-                            Step {item.processStep} • {item.quantity} pcs
-                          </div>
-                          <div className="text-xs opacity-75 flex items-center gap-1">
-                            <span>{item.allocatedTime}min</span>
-                            {hasOvertime(item) && (
-                              <span className="bg-orange-500 text-white px-1 rounded text-xs font-semibold">
-                                +{getTotalOvertimeHours(item)}h OVERTIME
-                              </span>
-                            )}
+                          <div className="text-[10px] opacity-90 truncate">
+                            {po?.poNumber} • {item.quantity}pcs
                           </div>
                         </div>
-                        {/* Progress Bar */}
-                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-black bg-opacity-20 rounded-b-lg">
+
+                        {/* Progress Bar Overlay */}
+                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/10">
                           <div
-                            className="h-full bg-white bg-opacity-60 rounded-b-lg transition-all duration-300"
+                            className="h-full bg-white/50 transition-all duration-300"
                             style={{ width: `${progress}%` }}
                           />
                         </div>
@@ -422,70 +390,34 @@ const GanttChart: React.FC<GanttChartProps> = ({ scheduleItems, onItemClick }) =
       </div>
 
       {/* Legend */}
-      <div className="p-4 border-t border-gray-100 bg-gray-50">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-6">
-            <div className="flex items-center space-x-4">
-              <span className="text-sm font-medium text-gray-700">Priority:</span>
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-1">
-                  <div className="w-3 h-3 bg-red-500 rounded"></div>
-                  <span className="text-xs text-gray-600">Urgent</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <div className="w-3 h-3 bg-orange-500 rounded"></div>
-                  <span className="text-xs text-gray-600">High</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <div className="w-3 h-3 bg-blue-500 rounded"></div>
-                  <span className="text-xs text-gray-600">Medium</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <div className="w-3 h-3 bg-green-500 rounded"></div>
-                  <span className="text-xs text-gray-600">Low</span>
-                </div>
-              </div>
+      <div className="p-4 border-t border-gray-100 bg-gray-50/50">
+        <div className="flex flex-wrap items-center gap-6 text-xs text-gray-600">
+          <div className="flex items-center gap-3">
+            <span className="font-semibold text-gray-900">Status:</span>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-emerald-500 rounded-sm"></div>
+              <span>Completed</span>
             </div>
-            
-            <div className="flex items-center space-x-4">
-              <span className="text-sm font-medium text-gray-700">Status:</span>
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-1">
-                  <div className="w-3 h-3 bg-green-600 rounded"></div>
-                  <span className="text-xs text-gray-600">Completed</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <div className="w-3 h-3 bg-blue-600 rounded"></div>
-                  <span className="text-xs text-gray-600">In Progress</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <div className="w-3 h-3 bg-red-600 rounded"></div>
-                  <span className="text-xs text-gray-600">Delayed</span>
-                </div>
-                <div className="flex items-center space-x-1">
-                  <div className="w-3 h-3 bg-gray-600 rounded"></div>
-                  <span className="text-xs text-gray-600">Scheduled</span>
-                </div>
-              </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-blue-500 rounded-sm"></div>
+              <span>In Progress</span>
             </div>
-            
-            <div className="flex items-center space-x-4">
-              <span className="text-sm font-medium text-gray-700">Overtime:</span>
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-1">
-                  <div className="w-3 h-3 bg-blue-500 rounded ring-2 ring-orange-400 ring-opacity-60"></div>
-                  <Clock size={12} className="text-orange-500" />
-                  <span className="text-xs text-gray-600">Has Overtime</span>
-                </div>
-              </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-red-500 rounded-sm"></div>
+              <span>Delayed</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-gray-500 rounded-sm"></div>
+              <span>Scheduled</span>
             </div>
           </div>
-          
-          <div className="text-xs text-gray-500">
-            Total Items: {scheduleItems.length} • 
-            Machines: {machines.length} • 
-            View: {viewMode} • 
-            Zoom: {Math.round(zoomLevel * 100)}%
+
+          <div className="flex items-center gap-3">
+            <span className="font-semibold text-gray-900">Indicators:</span>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 border-2 border-orange-400 rounded-sm"></div>
+              <span>Overtime</span>
+            </div>
           </div>
         </div>
       </div>

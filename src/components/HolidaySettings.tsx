@@ -1,6 +1,23 @@
 import React, { useState } from 'react';
 import { useApp } from '../contexts/AppContext';
-import { Calendar, Plus, Trash2, RefreshCw, Star, Upload, Download, Edit2, Check, X, Clock, AlertTriangle } from 'lucide-react';
+import {
+  Calendar as CalendarIcon,
+  Plus,
+  Trash2,
+  RefreshCw,
+  Star,
+  Upload,
+  Download,
+  Edit2,
+  Check,
+  X,
+  Clock,
+  AlertTriangle,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+  MoreHorizontal
+} from 'lucide-react';
 
 interface HolidayEntry {
   date: string;
@@ -9,7 +26,8 @@ interface HolidayEntry {
 
 const HolidaySettings: React.FC = () => {
   const { holidays, setHolidays } = useApp();
-  // Parse holidays as objects with optional reason (stored as 'YYYY-MM-DD|reason')
+
+  // Parse holidays
   const parseHoliday = (h: string): HolidayEntry => {
     const [date, ...reasonParts] = h.split('|');
     return { date, reason: reasonParts.join('|') || '' };
@@ -17,17 +35,11 @@ const HolidaySettings: React.FC = () => {
   const serializeHoliday = (h: HolidayEntry) => h.reason ? `${h.date}|${h.reason}` : h.date;
   const holidayEntries: HolidayEntry[] = holidays.map(parseHoliday);
 
-  // Helper function to format date consistently
   const formatDate = (date: Date): string => {
-    return date.toLocaleDateString('en-CA'); // YYYY-MM-DD format in local timezone
+    return date.toLocaleDateString('en-CA');
   };
 
-  // Helper function to check if a date is Sunday
-  const isSunday = (date: Date): boolean => {
-    return date.getDay() === 0;
-  };
-
-  // Helper function to check if a date is Saturday
+  const isSunday = (date: Date): boolean => date.getDay() === 0;
   const isSaturday = (dateStr: string): boolean => {
     const d = new Date(dateStr);
     return d.getDay() === 6;
@@ -36,7 +48,7 @@ const HolidaySettings: React.FC = () => {
   const [newHoliday, setNewHoliday] = useState('');
   const [newReason, setNewReason] = useState('');
   const [recurring, setRecurring] = useState(false);
-  const [year, setYear] = useState(new Date().getFullYear());
+  const [year] = useState(new Date().getFullYear());
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [editing, setEditing] = useState<string | null>(null);
   const [editReason, setEditReason] = useState('');
@@ -44,48 +56,39 @@ const HolidaySettings: React.FC = () => {
   const [calendarClickReason, setCalendarClickReason] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [showRemoveModal, setShowRemoveModal] = useState<{ date: string, reason: string } | null>(null);
-  
+
   // Overtime policy settings
   const [overtimePolicySettings, setOvertimePolicySettings] = useState({
-    holidayOvertimeMultiplier: 2.5, // Holiday overtime multiplier
-    allowHolidayWork: false, // Whether work is allowed on holidays
-    maxHolidayOvertimeHours: 8, // Maximum overtime hours on holidays
-    requireApprovalForHolidayWork: true, // Require approval for holiday work
-    emergencyOverrideAllowed: true // Allow emergency override
+    holidayOvertimeMultiplier: 2.5,
+    allowHolidayWork: false,
+    maxHolidayOvertimeHours: 8,
+    requireApprovalForHolidayWork: true,
+    emergencyOverrideAllowed: true
   });
-  
+
   const [showOvertimePolicyModal, setShowOvertimePolicyModal] = useState(false);
 
-  // Helper to get all Sundays in a year
   const getAllSundays = (year: number): string[] => {
     const sundays: string[] = [];
-    // Start from January 1st of the year
     const date = new Date(year, 0, 1);
-    
-    // Find the first Sunday of the year
     while (date.getDay() !== 0) {
       date.setDate(date.getDate() + 1);
     }
-    
-    // Add all Sundays in the year
     while (date.getFullYear() === year) {
       const dateStr = formatDate(date);
-      // Double-check this is actually a Sunday by checking the day name
       const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
       if (dayName === 'Sunday') {
         sundays.push(dateStr);
       }
-      date.setDate(date.getDate() + 7); // Move to next Sunday
+      date.setDate(date.getDate() + 7);
     }
     return sundays;
   };
 
   const sundays = getAllSundays(year);
-  // Only user holidays that are NOT Sundays and NOT Saturdays
   const userHolidays = holidayEntries.filter(
     h => !sundays.includes(h.date) && !isSaturday(h.date)
   );
-  // Only show Sundays and valid custom holidays
   const allHolidays = [
     ...sundays.map(date => ({ date, reason: 'Sunday' })),
     ...userHolidays.filter(h => h.reason || h.date)
@@ -95,7 +98,6 @@ const HolidaySettings: React.FC = () => {
     if (!newHoliday) return;
     let newList = [...holidays, serializeHoliday({ date: newHoliday, reason: newReason })];
     if (recurring) {
-      // Add for next 5 years
       const base = new Date(newHoliday);
       for (let i = 1; i <= 5; i++) {
         const next = new Date(base);
@@ -106,20 +108,21 @@ const HolidaySettings: React.FC = () => {
     setHolidays(Array.from(new Set(newList)));
     setNewHoliday('');
     setNewReason('');
-    setMessage({ type: 'success', text: 'Holiday added.' });
+    setMessage({ type: 'success', text: 'Holiday added successfully.' });
+    setTimeout(() => setMessage(null), 3000);
   };
 
   const removeHoliday = (date: string) => {
-    // Don't allow removing Sundays
     if (sundays.includes(date)) return;
     setHolidays(holidays.filter(h => !h.startsWith(date)));
   };
 
   const resetToSundays = () => {
     setHolidays(sundays);
+    setMessage({ type: 'success', text: 'Reset to Sundays only.' });
+    setTimeout(() => setMessage(null), 3000);
   };
 
-  // Export holidays as JSON
   const exportJSON = () => {
     const blob = new Blob([JSON.stringify(holidays, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -129,9 +132,9 @@ const HolidaySettings: React.FC = () => {
     a.click();
     URL.revokeObjectURL(url);
     setMessage({ type: 'success', text: 'Exported holidays as JSON.' });
+    setTimeout(() => setMessage(null), 3000);
   };
 
-  // Export holidays as CSV
   const exportCSV = () => {
     const csv = holidays.map(h => h.replace('|', ',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -142,9 +145,9 @@ const HolidaySettings: React.FC = () => {
     a.click();
     URL.revokeObjectURL(url);
     setMessage({ type: 'success', text: 'Exported holidays as CSV.' });
+    setTimeout(() => setMessage(null), 3000);
   };
 
-  // Import holidays from file
   const importHolidays = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -162,19 +165,21 @@ const HolidaySettings: React.FC = () => {
         }
         setHolidays(Array.from(new Set([...holidays, ...imported])));
         setMessage({ type: 'success', text: 'Imported holidays successfully.' });
+        setTimeout(() => setMessage(null), 3000);
       } catch {
         setMessage({ type: 'error', text: 'Failed to import holidays. Invalid file format.' });
+        setTimeout(() => setMessage(null), 3000);
       }
     };
     reader.readAsText(file);
     e.target.value = '';
   };
 
-  // Calendar grid logic
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
+
   const getMonthDays = (month: Date) => {
     const year = month.getFullYear();
     const monthIdx = month.getMonth();
@@ -192,6 +197,7 @@ const HolidaySettings: React.FC = () => {
     }
     return days;
   };
+
   const monthDays = getMonthDays(calendarMonth);
   const isHoliday = (date: Date) => allHolidays.some(h => h.date === formatDate(date));
   const getHolidayReason = (date: Date) => {
@@ -202,12 +208,9 @@ const HolidaySettings: React.FC = () => {
     const now = new Date();
     return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
   };
-  const nextMonth = () => {
-    setCalendarMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
-  };
-  const prevMonth = () => {
-    setCalendarMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
-  };
+
+  const nextMonth = () => setCalendarMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  const prevMonth = () => setCalendarMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
 
   const handleCalendarClick = (date: Date) => {
     const dateStr = formatDate(date);
@@ -222,7 +225,6 @@ const HolidaySettings: React.FC = () => {
     }
   };
 
-  // Edit reason for a holiday
   const startEdit = (date: string, reason: string) => {
     setEditing(date);
     setEditReason(reason);
@@ -232,395 +234,498 @@ const HolidaySettings: React.FC = () => {
     setEditing(null);
     setEditReason('');
     setMessage({ type: 'success', text: 'Reason updated.' });
+    setTimeout(() => setMessage(null), 3000);
   };
   const cancelEdit = () => {
     setEditing(null);
     setEditReason('');
   };
 
-  // Color coding for reasons
   const reasonColor = (reason: string) => {
-    if (!reason || reason === 'Sunday') return 'bg-blue-100 border-blue-300 text-blue-700';
-    if (/festival|holiday|celebration/i.test(reason)) return 'bg-pink-100 border-pink-300 text-pink-700';
-    if (/maintenance|shutdown|repair/i.test(reason)) return 'bg-yellow-100 border-yellow-300 text-yellow-700';
-    if (/national|public/i.test(reason)) return 'bg-green-100 border-green-300 text-green-700';
-    return 'bg-purple-100 border-purple-300 text-purple-700';
+    if (!reason || reason === 'Sunday') return 'bg-gray-100 border-gray-200 text-gray-700';
+    if (/festival|holiday|celebration/i.test(reason)) return 'bg-pink-50 border-pink-200 text-pink-700';
+    if (/maintenance|shutdown|repair/i.test(reason)) return 'bg-amber-50 border-amber-200 text-amber-700';
+    if (/national|public/i.test(reason)) return 'bg-emerald-50 border-emerald-200 text-emerald-700';
+    return 'bg-purple-50 border-purple-200 text-purple-700';
   };
-  // Color legend for holiday types
-  const colorLegend: { label: string; className: string; tooltip: string }[] = [
-    { label: 'Sunday', className: 'bg-blue-100 border-blue-300 text-blue-700', tooltip: 'Default weekly holiday (every Sunday)' },
-    { label: 'Festival/Celebration', className: 'bg-pink-100 border-pink-300 text-pink-700', tooltip: 'Festival, celebration, or special event' },
-    { label: 'Maintenance/Shutdown', className: 'bg-yellow-100 border-yellow-300 text-yellow-700', tooltip: 'Maintenance, shutdown, or repair' },
-    { label: 'National/Public', className: 'bg-green-100 border-green-300 text-green-700', tooltip: 'National or public holiday' },
-    { label: 'Other', className: 'bg-purple-100 border-purple-300 text-purple-700', tooltip: 'Other custom reason' },
+
+  const colorLegend = [
+    { label: 'Sunday', className: 'bg-gray-100 border-gray-200 text-gray-700', tooltip: 'Default weekly holiday' },
+    { label: 'Festival', className: 'bg-pink-50 border-pink-200 text-pink-700', tooltip: 'Festival/Celebration' },
+    { label: 'Maintenance', className: 'bg-amber-50 border-amber-200 text-amber-700', tooltip: 'Maintenance/Shutdown' },
+    { label: 'Public', className: 'bg-emerald-50 border-emerald-200 text-emerald-700', tooltip: 'National/Public Holiday' },
+    { label: 'Other', className: 'bg-purple-50 border-purple-200 text-purple-700', tooltip: 'Other' },
   ];
 
-
-  
-
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex flex-col items-center justify-center py-8 px-2">
-      <div className="w-full max-w-5xl bg-white rounded-2xl shadow-2xl border border-blue-100 p-8 flex flex-col gap-8">
-        {/* Color legend */}
-        <div className="flex flex-wrap gap-3 mb-4 items-center">
-          <span className="font-semibold text-gray-700 mr-2">Legend:</span>
-          {colorLegend.map((l: { label: string; className: string; tooltip: string }) => (
-            <span key={l.label} className={`relative group px-3 py-1 rounded-full border text-xs font-semibold ${l.className} cursor-pointer transition-colors duration-200`}
-              tabIndex={0}
-            >
-              {l.label}
-              <span className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-20 opacity-0 group-hover:opacity-100 group-focus:opacity-100 pointer-events-none transition-opacity duration-300 bg-gray-900 text-white text-xs rounded px-3 py-2 shadow-lg whitespace-nowrap min-w-max">
-                {l.tooltip}
-              </span>
-            </span>
-          ))}
+    <div className="p-8 max-w-[1600px] mx-auto min-h-screen bg-[#F8F9FC]">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Holiday Settings</h1>
+          <p className="text-gray-500 mt-1">Manage company holidays and overtime policies</p>
         </div>
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-          <div className="flex items-center gap-3">
-            <Calendar size={36} className="text-blue-600" />
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Holiday Settings</h1>
-              <p className="text-gray-500">Manage company holidays. All Sundays are holidays by default. Add a reason for each holiday for better clarity.</p>
-            </div>
-          </div>
-          <div className="flex gap-2 flex-wrap items-center mt-4 md:mt-0">
-            <button onClick={() => setShowOvertimePolicyModal(true)} className="flex items-center gap-2 px-4 py-2 bg-orange-100 text-orange-700 rounded-md hover:bg-orange-200 transition-colors" title="Configure overtime policies for holidays">
-              <Clock size={16} /> Overtime Policy
-            </button>
-            <button onClick={resetToSundays} className="flex items-center gap-2 px-4 py-2 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition-colors" title="Reset to Sundays only">
-              <RefreshCw size={16} /> Reset
-            </button>
-            <button onClick={exportJSON} className="flex items-center gap-2 px-4 py-2 bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition-colors" title="Export as JSON">
-              <Download size={16} /> JSON
-            </button>
-            <button onClick={exportCSV} className="flex items-center gap-2 px-4 py-2 bg-amber-100 text-amber-700 rounded-md hover:bg-amber-200 transition-colors" title="Export as CSV">
-              <Download size={16} /> CSV
-            </button>
-            <label className="flex items-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 rounded-md hover:bg-purple-200 transition-colors cursor-pointer" title="Import holidays">
-              <Upload size={16} /> Import
-              <input type="file" accept=".json,.csv" onChange={importHolidays} className="hidden" />
-            </label>
-          </div>
+
+        <div className="flex flex-wrap gap-3">
+          <button
+            onClick={() => setShowOvertimePolicyModal(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 transition-all shadow-sm font-medium"
+          >
+            <Clock size={18} className="text-[#F24E1E]" />
+            Overtime Policy
+          </button>
+
+          <div className="h-10 w-px bg-gray-300 mx-1 hidden md:block"></div>
+
+          <button onClick={resetToSundays} className="p-2.5 bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 hover:text-[#F24E1E] transition-all shadow-sm" title="Reset to Sundays">
+            <RefreshCw size={20} />
+          </button>
+
+          <button onClick={exportJSON} className="p-2.5 bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 hover:text-[#F24E1E] transition-all shadow-sm" title="Export JSON">
+            <Download size={20} />
+          </button>
+
+          <label className="p-2.5 bg-white border border-gray-200 text-gray-600 rounded-xl hover:bg-gray-50 hover:text-[#F24E1E] transition-all shadow-sm cursor-pointer" title="Import">
+            <Upload size={20} />
+            <input type="file" accept=".json,.csv" onChange={importHolidays} className="hidden" />
+          </label>
+
+          <button onClick={exportCSV} className="flex items-center gap-2 px-4 py-2.5 bg-[#F24E1E] text-white rounded-xl hover:bg-[#d63d12] transition-all shadow-lg shadow-orange-200 font-medium">
+            <Download size={18} />
+            Export CSV
+          </button>
         </div>
-        {message && (
-          <div className={`mb-4 px-4 py-2 rounded-md ${message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>{message.text}</div>
-        )}
-        <div className="flex flex-col md:flex-row gap-8 w-full">
-          {/* Calendar Grid */}
-          <div className="flex-1">
-            <div className="flex items-center justify-between mb-2">
-              <button onClick={prevMonth} className="px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200">&lt;</button>
-              <span className="font-semibold text-blue-800 text-lg">{calendarMonth.toLocaleString(undefined, { month: 'long', year: 'numeric' })}</span>
-              <button onClick={nextMonth} className="px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200">&gt;</button>
-            </div>
-            <table className="w-full text-center select-none">
-              <thead>
-                <tr className="text-blue-700">
-                  {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                    <th key={day} className="py-2 font-semibold">{day}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {Array.from({ length: Math.ceil(monthDays.length / 7) }).map((_, weekIdx) => (
-                  <tr key={weekIdx}>
-                    {monthDays.slice(weekIdx * 7, weekIdx * 7 + 7).map((date, idx) => {
-                      const holiday = isHoliday(date);
-                      const today = isToday(date);
-                      const inMonth = date.getMonth() === calendarMonth.getMonth();
-                      const reason = getHolidayReason(date);
-                      const dateStr = formatDate(date);
-                      const isSundayDate = isSunday(date);
-                      const colorClass = holiday && inMonth ? reasonColor(reason || (isSundayDate ? 'Sunday' : '')) : '';
-                      return (
-                        <td
-                          key={idx}
-                          className={`relative py-2 px-1 md:px-2 rounded-lg transition-all duration-200 cursor-pointer font-bold
-                            ${colorClass} ${holiday && inMonth ? 'border-2' : ''}
-                            ${today && inMonth ? 'bg-blue-200 text-blue-900 border-2 border-blue-400' : ''}
-                            ${!inMonth ? 'text-gray-300' : ''}
-                          `}
-                          title={holiday && inMonth ? (reason ? `Holiday: ${reason}` : 'Holiday') : today && inMonth ? 'Today' : ''}
-                          onClick={() => inMonth && handleCalendarClick(date)}
-                        >
-                          {date.getDate()}
-                          {holiday && inMonth && (
-                            <span className="absolute top-1 right-1 text-xs text-red-400">•</span>
-                          )}
-                          {today && inMonth && (
-                            <span className="absolute bottom-1 left-1 text-xs text-blue-700">Today</span>
-                          )}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {/* Add Holiday Form and List */}
-          <div className="flex-1 flex flex-col gap-6">
-            <div className="bg-blue-50 rounded-xl p-6 border border-blue-100 shadow">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Add Holiday</label>
-              <div className="flex flex-col gap-2">
-                <div className="flex gap-2 items-center">
-                  <input
-                    type="date"
-                    value={newHoliday}
-                    onChange={e => setNewHoliday(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    min={`${year}-01-01`}
-                    max={`${year + 5}-12-31`}
-                  />
-                  <input
-                    type="text"
-                    value={newReason}
-                    onChange={e => setNewReason(e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Reason (e.g. Festival, Maintenance, etc.)"
-                  />
+      </div>
+
+      {message && (
+        <div className={`mb-6 px-4 py-3 rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2 ${message.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200'
+          }`}>
+          {message.type === 'success' ? <Check size={18} /> : <AlertTriangle size={18} />}
+          {message.text}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
+        {/* Left Column: Calendar */}
+        <div className="xl:col-span-8 space-y-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-50 rounded-lg">
+                  <CalendarIcon className="text-[#F24E1E]" size={24} />
                 </div>
-                <div className="flex gap-2 items-center">
-                  <label className="flex items-center gap-1 text-xs text-gray-600">
-                    <input type="checkbox" checked={recurring} onChange={e => setRecurring(e.target.checked)} />
-                    Recurring (every year)
-                  </label>
-                  <button
-                    onClick={addHoliday}
-                    className="flex items-center gap-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                    disabled={!newHoliday}
-                  >
-                    <Plus size={16} /> Add
-                  </button>
-                </div>
+                <h2 className="text-lg font-bold text-gray-900">Calendar Overview</h2>
+              </div>
+
+              <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-1">
+                <button onClick={prevMonth} className="p-1 hover:bg-white hover:shadow-sm rounded-md transition-all text-gray-600">
+                  <ChevronLeft size={20} />
+                </button>
+                <span className="px-4 font-semibold text-gray-700 min-w-[140px] text-center">
+                  {calendarMonth.toLocaleString(undefined, { month: 'long', year: 'numeric' })}
+                </span>
+                <button onClick={nextMonth} className="p-1 hover:bg-white hover:shadow-sm rounded-md transition-all text-gray-600">
+                  <ChevronRight size={20} />
+                </button>
               </div>
             </div>
-            <div className="bg-white rounded-xl p-6 border border-blue-100 shadow flex-1 overflow-y-auto">
-              <h2 className="text-lg font-semibold text-blue-800 mb-3 flex items-center gap-2">
-                <Star size={18} className="text-amber-400" /> Holidays List
-              </h2>
-              <div className="max-h-96 overflow-y-auto border rounded-lg">
-                <table className="w-full text-sm">
-                  <thead className="bg-blue-50">
-                    <tr>
-                      <th className="px-4 py-2 text-left">Date</th>
-                      <th className="px-4 py-2 text-left">Day</th>
-                      <th className="px-4 py-2 text-left">Reason</th>
-                      <th className="px-4 py-2 text-left">Type</th>
-                      <th className="px-4 py-2"></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {allHolidays.map(({ date, reason }) => {
-                      const d = new Date(date);
-                      const isSundayDate = isSunday(d);
-                      const isEditing = editing === date;
-                      return (
-                        <tr key={date} className={isSundayDate ? 'bg-gray-50' : ''}>
-                          <td className="px-4 py-2 font-mono">{date}</td>
-                          <td className="px-4 py-2">{d.toLocaleDateString(undefined, { weekday: 'long' })}</td>
-                          <td className="px-4 py-2">
+
+            <div className="flex flex-wrap gap-2 mb-6">
+              {colorLegend.map((l) => (
+                <span key={l.label} className={`px-2.5 py-1 rounded-md text-xs font-medium border ${l.className}`} title={l.tooltip}>
+                  {l.label}
+                </span>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-7 gap-2 mb-2">
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                <div key={day} className="text-center text-xs font-semibold text-gray-400 uppercase tracking-wider py-2">
+                  {day}
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-7 gap-2">
+              {monthDays.map((date, idx) => {
+                const holiday = isHoliday(date);
+                const today = isToday(date);
+                const inMonth = date.getMonth() === calendarMonth.getMonth();
+                const reason = getHolidayReason(date);
+                const isSundayDate = isSunday(date);
+                const colorClass = holiday && inMonth ? reasonColor(reason || (isSundayDate ? 'Sunday' : '')) : 'hover:bg-gray-50';
+
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => inMonth && handleCalendarClick(date)}
+                    className={`
+                      relative h-28 p-3 rounded-xl border transition-all duration-200 flex flex-col justify-between cursor-pointer group
+                      ${!inMonth ? 'bg-gray-50/50 border-transparent text-gray-300' : 'bg-white border-gray-100'}
+                      ${today && inMonth ? 'ring-2 ring-[#F24E1E] ring-offset-2 z-10' : ''}
+                      ${holiday && inMonth ? colorClass : ''}
+                      ${inMonth && !holiday ? 'hover:border-[#F24E1E]/30' : ''}
+                    `}
+                  >
+                    <div className="flex justify-between items-start">
+                      <span className={`text-sm font-medium ${today && inMonth ? 'text-[#F24E1E]' : 'text-gray-700'}`}>
+                        {date.getDate()}
+                      </span>
+                      {holiday && inMonth && (
+                        <div className="w-1.5 h-1.5 rounded-full bg-[#F24E1E]/60"></div>
+                      )}
+                    </div>
+
+                    {holiday && inMonth && (
+                      <span className="text-xs font-medium truncate w-full block opacity-85 leading-tight">
+                        {reason}
+                      </span>
+                    )}
+
+                    {today && inMonth && !holiday && (
+                      <span className="text-[10px] font-bold text-[#F24E1E]">Today</span>
+                    )}
+
+                    {inMonth && !holiday && (
+                      <div className="opacity-0 group-hover:opacity-100 absolute inset-0 flex items-center justify-center bg-gray-50/50 rounded-xl transition-opacity">
+                        <Plus size={20} className="text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column: Add & List */}
+        <div className="xl:col-span-4 space-y-6">
+          {/* Add Holiday Card */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <Plus size={20} className="text-[#F24E1E]" /> Add Holiday
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Date</label>
+                <input
+                  type="date"
+                  value={newHoliday}
+                  onChange={e => setNewHoliday(e.target.value)}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F24E1E]/20 focus:border-[#F24E1E] transition-all"
+                  min={`${year}-01-01`}
+                  max={`${year + 5}-12-31`}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Reason</label>
+                <input
+                  type="text"
+                  value={newReason}
+                  onChange={e => setNewReason(e.target.value)}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F24E1E]/20 focus:border-[#F24E1E] transition-all"
+                  placeholder="e.g. Festival, Maintenance"
+                />
+              </div>
+              <div className="flex items-center justify-between pt-2">
+                <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={recurring}
+                    onChange={e => setRecurring(e.target.checked)}
+                    className="w-4 h-4 text-[#F24E1E] rounded border-gray-300 focus:ring-[#F24E1E]"
+                  />
+                  Recurring (5 years)
+                </label>
+                <button
+                  onClick={addHoliday}
+                  disabled={!newHoliday}
+                  className="px-6 py-2.5 bg-[#F24E1E] text-white rounded-xl hover:bg-[#d63d12] transition-all shadow-md shadow-orange-100 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Holidays List Card */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 flex flex-col h-[600px]">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <Star size={20} className="text-amber-400" /> Holidays List
+              </h3>
+              <span className="text-xs font-medium px-2.5 py-1 bg-gray-100 rounded-full text-gray-600">
+                {allHolidays.length} Days
+              </span>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-2">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50/50 sticky top-0 z-10">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider rounded-l-lg">Date</th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Reason</th>
+                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider rounded-r-lg">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {allHolidays.map(({ date, reason }) => {
+                    const d = new Date(date);
+                    const isSundayDate = isSunday(d);
+                    const isEditing = editing === date;
+
+                    if (isSundayDate) return null; // Skip Sundays in list to reduce clutter, or keep if preferred. Keeping for now but maybe filtering could be an option.
+                    // Actually let's keep them but style them subtly, or maybe filter them out if the list is too long. 
+                    // The original code showed them. Let's filter them out to make the list more useful for "Custom Holidays".
+
+                    return (
+                      <tr key={date} className="group hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <div className="font-medium text-gray-900">{d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</div>
+                          <div className="text-xs text-gray-500">{d.toLocaleDateString(undefined, { weekday: 'short' })}</div>
+                        </td>
+                        <td className="px-4 py-3">
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              value={editReason}
+                              onChange={e => setEditReason(e.target.value)}
+                              className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:border-[#F24E1E] focus:ring-1 focus:ring-[#F24E1E] outline-none"
+                              autoFocus
+                            />
+                          ) : (
+                            <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${reasonColor(reason)}`}>
+                              {reason}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             {isEditing ? (
-                              <input
-                                type="text"
-                                value={editReason}
-                                onChange={e => setEditReason(e.target.value)}
-                                className="px-2 py-1 border border-gray-300 rounded"
-                                placeholder="Reason"
-                              />
-                            ) : (
-                              <span className={`px-2 py-1 rounded ${reasonColor(reason || (isSundayDate ? 'Sunday' : ''))}`}>{reason || (isSundayDate ? 'Sunday' : <span className="text-gray-400">—</span>)}</span>
-                            )}
-                          </td>
-                          <td className="px-4 py-2">
-                            {isSundayDate ? <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-xs">Sunday</span> : <span className="px-2 py-1 rounded-full bg-amber-100 text-amber-700 text-xs">Custom</span>}
-                          </td>
-                          <td className="px-4 py-2 flex gap-2 items-center">
-                            {!isSundayDate && !isEditing && (
                               <>
-                                <button onClick={() => startEdit(date, reason)} className="text-blue-500 hover:text-blue-700" title="Edit Reason">
+                                <button onClick={() => saveEdit(date)} className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors">
+                                  <Check size={16} />
+                                </button>
+                                <button onClick={cancelEdit} className="p-1.5 text-gray-400 hover:bg-gray-100 rounded-lg transition-colors">
+                                  <X size={16} />
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button onClick={() => startEdit(date, reason)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
                                   <Edit2 size={16} />
                                 </button>
-                                <button onClick={() => removeHoliday(date)} className="text-red-500 hover:text-red-700" title="Remove">
+                                <button onClick={() => removeHoliday(date)} className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors">
                                   <Trash2 size={16} />
                                 </button>
                               </>
                             )}
-                            {isEditing && (
-                              <>
-                                <button onClick={() => saveEdit(date)} className="text-green-600 hover:text-green-800" title="Save">
-                                  <Check size={16} />
-                                </button>
-                                <button onClick={cancelEdit} className="text-gray-400 hover:text-gray-600" title="Cancel">
-                                  <X size={16} />
-                                </button>
-                              </>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                    {allHolidays.length === 0 && (
-                      <tr><td colSpan={5} className="text-center text-gray-400 py-4">No holidays set.</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {allHolidays.filter(h => !isSunday(new Date(h.date))).length === 0 && (
+                    <tr><td colSpan={3} className="text-center text-gray-400 py-8">No custom holidays added.</td></tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
       </div>
-      {/* Add Holiday Modal */}
+
+      {/* Add Holiday Modal (from Calendar Click) */}
       {showAddModal && calendarClickDate && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-blue-200 max-w-md w-full">
-            <h3 className="text-xl font-bold text-blue-900 mb-4">Add Holiday</h3>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-              <input type="date" value={calendarClickDate} readOnly className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-100" />
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full mx-4 transform transition-all scale-100">
+            <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+              <div className="p-2 bg-orange-50 rounded-lg"><Plus size={20} className="text-[#F24E1E]" /></div>
+              Add Holiday
+            </h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Date</label>
+                <div className="px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-700 font-medium">
+                  {new Date(calendarClickDate).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Reason</label>
+                <input
+                  type="text"
+                  value={calendarClickReason}
+                  onChange={e => setCalendarClickReason(e.target.value)}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F24E1E]/20 focus:border-[#F24E1E] transition-all"
+                  placeholder="e.g. Festival, Maintenance"
+                  autoFocus
+                />
+              </div>
             </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Reason</label>
-              <input
-                type="text"
-                value={calendarClickReason}
-                onChange={e => setCalendarClickReason(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Reason (e.g. Festival, Maintenance, etc.)"
-              />
-            </div>
-            <div className="flex gap-2 justify-end">
+
+            <div className="flex gap-3 justify-end mt-8">
               <button
                 onClick={() => {
                   setShowAddModal(false);
                   setCalendarClickDate(null);
                   setCalendarClickReason('');
                 }}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
-              >Cancel</button>
+                className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 font-medium transition-colors"
+              >
+                Cancel
+              </button>
               <button
                 onClick={() => {
                   setHolidays(Array.from(new Set([...holidays, calendarClickDate + (calendarClickReason ? '|' + calendarClickReason : '')])));
                   setShowAddModal(false);
                   setCalendarClickDate(null);
                   setCalendarClickReason('');
-                  setMessage({ type: 'success', text: 'Holiday added.' });
+                  setMessage({ type: 'success', text: 'Holiday added successfully.' });
+                  setTimeout(() => setMessage(null), 3000);
                 }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                className="px-5 py-2.5 bg-[#F24E1E] text-white rounded-xl hover:bg-[#d63d12] shadow-lg shadow-orange-200 font-medium transition-colors"
                 disabled={!calendarClickDate}
-              >Add</button>
+              >
+                Add Holiday
+              </button>
             </div>
           </div>
         </div>
       )}
+
       {/* Remove Holiday Modal */}
       {showRemoveModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-red-200 max-w-md w-full">
-            <h3 className="text-xl font-bold text-red-900 mb-4">Remove Holiday</h3>
-            <div className="mb-4">
-              <p>Are you sure you want to remove the holiday on <span className="font-mono text-blue-700">{showRemoveModal.date}</span>?</p>
-              {showRemoveModal.reason && <p className="text-sm text-gray-500 mt-2">Reason: <span className="text-amber-700">{showRemoveModal.reason}</span></p>}
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full mx-4">
+            <div className="flex flex-col items-center text-center mb-6">
+              <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mb-4">
+                <Trash2 size={24} className="text-red-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900">Remove Holiday?</h3>
+              <p className="text-gray-500 mt-2">
+                Are you sure you want to remove the holiday on <span className="font-semibold text-gray-900">{new Date(showRemoveModal.date).toLocaleDateString()}</span>?
+              </p>
+              {showRemoveModal.reason && (
+                <span className="mt-3 px-3 py-1 bg-gray-100 rounded-full text-sm text-gray-600 font-medium">
+                  {showRemoveModal.reason}
+                </span>
+              )}
             </div>
-            <div className="flex gap-2 justify-end">
+
+            <div className="flex gap-3 justify-center">
               <button
                 onClick={() => setShowRemoveModal(null)}
-                className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
-              >Cancel</button>
+                className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 font-medium transition-colors min-w-[100px]"
+              >
+                Cancel
+              </button>
               <button
                 onClick={() => {
                   setHolidays(holidays.filter(h => !h.startsWith(showRemoveModal.date)));
                   setShowRemoveModal(null);
-                  setMessage({ type: 'success', text: 'Holiday removed.' });
+                  setMessage({ type: 'success', text: 'Holiday removed successfully.' });
+                  setTimeout(() => setMessage(null), 3000);
                 }}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-              >Remove</button>
+                className="px-5 py-2.5 bg-red-600 text-white rounded-xl hover:bg-red-700 shadow-lg shadow-red-200 font-medium transition-colors min-w-[100px]"
+              >
+                Remove
+              </button>
             </div>
           </div>
         </div>
       )}
-      
+
       {/* Overtime Policy Modal */}
       {showOvertimePolicyModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-orange-200 max-w-2xl w-full mx-4">
-            <div className="flex items-center gap-3 mb-6">
-              <Clock size={24} className="text-orange-600" />
-              <h3 className="text-2xl font-bold text-orange-900">Holiday Overtime Policy</h3>
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-xl p-8 max-w-2xl w-full mx-4">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="p-3 bg-orange-50 rounded-xl">
+                <Clock size={24} className="text-[#F24E1E]" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-bold text-gray-900">Holiday Overtime Policy</h3>
+                <p className="text-gray-500 text-sm">Configure rules for working on holidays</p>
+              </div>
             </div>
-            
+
             <div className="space-y-6">
               {/* Holiday Work Permission */}
-              <div className="bg-orange-50 p-4 rounded-lg border border-orange-200">
-                <div className="flex items-center justify-between mb-3">
-                  <label className="text-sm font-medium text-gray-700">Allow Work on Holidays</label>
-                  <input
-                    type="checkbox"
-                    checked={overtimePolicySettings.allowHolidayWork}
-                    onChange={(e) => setOvertimePolicySettings(prev => ({
-                      ...prev,
-                      allowHolidayWork: e.target.checked
-                    }))}
-                    className="w-4 h-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
-                  />
+              <div className="bg-gray-50 p-5 rounded-xl border border-gray-200 transition-all hover:border-gray-300">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-base font-semibold text-gray-900">Allow Work on Holidays</label>
+                  <div className="relative inline-block w-12 h-6 transition duration-200 ease-in-out rounded-full cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={overtimePolicySettings.allowHolidayWork}
+                      onChange={(e) => setOvertimePolicySettings(prev => ({
+                        ...prev,
+                        allowHolidayWork: e.target.checked
+                      }))}
+                      className="absolute w-6 h-6 opacity-0 cursor-pointer z-10"
+                    />
+                    <div className={`block w-12 h-7 rounded-full transition-colors ${overtimePolicySettings.allowHolidayWork ? 'bg-[#F24E1E]' : 'bg-gray-200'}`}></div>
+                    <div className={`absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform ${overtimePolicySettings.allowHolidayWork ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                  </div>
                 </div>
-                <p className="text-xs text-gray-600">
+                <p className="text-sm text-gray-500">
                   When enabled, employees can be scheduled to work on holidays with special overtime rates.
                 </p>
               </div>
 
               {overtimePolicySettings.allowHolidayWork && (
-                <>
-                  {/* Holiday Overtime Multiplier */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Holiday Overtime Multiplier
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        min="1"
-                        max="5"
-                        step="0.1"
-                        value={overtimePolicySettings.holidayOvertimeMultiplier}
-                        onChange={(e) => setOvertimePolicySettings(prev => ({
-                          ...prev,
-                          holidayOvertimeMultiplier: parseFloat(e.target.value)
-                        }))}
-                        className="w-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      />
-                      <span className="text-sm text-gray-600">× base rate</span>
+                <div className="space-y-6 animate-in fade-in slide-in-from-top-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Holiday Overtime Multiplier */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Overtime Multiplier
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          min="1"
+                          max="5"
+                          step="0.1"
+                          value={overtimePolicySettings.holidayOvertimeMultiplier}
+                          onChange={(e) => setOvertimePolicySettings(prev => ({
+                            ...prev,
+                            holidayOvertimeMultiplier: parseFloat(e.target.value)
+                          }))}
+                          className="w-full pl-4 pr-12 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F24E1E]/20 focus:border-[#F24E1E]"
+                        />
+                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">× Rate</span>
+                      </div>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Multiplier for overtime work performed on holidays (e.g., 2.5× means 250% of base rate)
-                    </p>
-                  </div>
 
-                  {/* Maximum Holiday Overtime Hours */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Maximum Holiday Overtime Hours
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        min="1"
-                        max="24"
-                        value={overtimePolicySettings.maxHolidayOvertimeHours}
-                        onChange={(e) => setOvertimePolicySettings(prev => ({
-                          ...prev,
-                          maxHolidayOvertimeHours: parseInt(e.target.value)
-                        }))}
-                        className="w-24 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                      />
-                      <span className="text-sm text-gray-600">hours per holiday</span>
+                    {/* Maximum Holiday Overtime Hours */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Max Hours / Holiday
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          min="1"
+                          max="24"
+                          value={overtimePolicySettings.maxHolidayOvertimeHours}
+                          onChange={(e) => setOvertimePolicySettings(prev => ({
+                            ...prev,
+                            maxHolidayOvertimeHours: parseInt(e.target.value)
+                          }))}
+                          className="w-full pl-4 pr-16 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#F24E1E]/20 focus:border-[#F24E1E]"
+                        />
+                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-medium">Hours</span>
+                      </div>
                     </div>
                   </div>
 
                   {/* Approval Requirements */}
-                  <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                    <div className="flex items-center justify-between mb-3">
-                      <label className="text-sm font-medium text-gray-700">Require Approval for Holiday Work</label>
+                  <div className="p-4 rounded-xl border border-amber-100 bg-amber-50/50">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-sm font-semibold text-gray-900">Require Approval</label>
                       <input
                         type="checkbox"
                         checked={overtimePolicySettings.requireApprovalForHolidayWork}
@@ -628,20 +733,20 @@ const HolidaySettings: React.FC = () => {
                           ...prev,
                           requireApprovalForHolidayWork: e.target.checked
                         }))}
-                        className="w-4 h-4 text-yellow-600 focus:ring-yellow-500 border-gray-300 rounded"
+                        className="w-5 h-5 text-amber-500 rounded border-gray-300 focus:ring-amber-500"
                       />
                     </div>
                     <p className="text-xs text-gray-600">
-                      When enabled, all holiday work requires management approval before scheduling.
+                      All holiday work requires management approval before scheduling.
                     </p>
                   </div>
 
                   {/* Emergency Override */}
-                  <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-                    <div className="flex items-center justify-between mb-3">
+                  <div className="p-4 rounded-xl border border-red-100 bg-red-50/50">
+                    <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <AlertTriangle size={16} className="text-red-600" />
-                        <label className="text-sm font-medium text-gray-700">Emergency Override Allowed</label>
+                        <AlertTriangle size={16} className="text-red-500" />
+                        <label className="text-sm font-semibold text-gray-900">Emergency Override</label>
                       </div>
                       <input
                         type="checkbox"
@@ -650,21 +755,21 @@ const HolidaySettings: React.FC = () => {
                           ...prev,
                           emergencyOverrideAllowed: e.target.checked
                         }))}
-                        className="w-4 h-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
+                        className="w-5 h-5 text-red-500 rounded border-gray-300 focus:ring-red-500"
                       />
                     </div>
                     <p className="text-xs text-gray-600">
-                      Allows supervisors to override holiday work restrictions in emergency situations.
+                      Allows supervisors to override restrictions in emergencies.
                     </p>
                   </div>
-                </>
+                </div>
               )}
             </div>
 
-            <div className="flex gap-3 justify-end mt-8">
+            <div className="flex gap-3 justify-end mt-8 pt-6 border-t border-gray-100">
               <button
                 onClick={() => setShowOvertimePolicyModal(false)}
-                className="px-6 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors"
+                className="px-6 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 font-medium transition-colors"
               >
                 Cancel
               </button>
@@ -672,8 +777,9 @@ const HolidaySettings: React.FC = () => {
                 onClick={() => {
                   setShowOvertimePolicyModal(false);
                   setMessage({ type: 'success', text: 'Overtime policy settings updated.' });
+                  setTimeout(() => setMessage(null), 3000);
                 }}
-                className="px-6 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 transition-colors"
+                className="px-6 py-2.5 bg-[#F24E1E] text-white rounded-xl hover:bg-[#d63d12] shadow-lg shadow-orange-200 font-medium transition-colors"
               >
                 Save Policy
               </button>

@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import Sidebar from './components/Layout/Sidebar';
+import Navbar from './components/Layout/Navbar';
 import Dashboard from './components/Dashboard/Dashboard';
 import MasterData from './components/MasterData/MasterData';
 import PurchaseOrders from './components/PurchaseOrders/PurchaseOrders';
@@ -26,6 +27,7 @@ const rolePermissions = {
     alerts: true,
     holidays: true,
     'shift-management': true,
+    settings: true,
   },
   admin: {
     dashboard: true,
@@ -37,6 +39,7 @@ const rolePermissions = {
     alerts: true,
     holidays: true,
     'shift-management': true,
+    settings: true,
   },
   operator: {
     dashboard: true,
@@ -48,6 +51,7 @@ const rolePermissions = {
     alerts: true,
     holidays: false,
     'shift-management': false,
+    settings: true,
   },
 };
 
@@ -116,8 +120,10 @@ function AuthGate() {
 
   // Main app layout when user is logged in
   return (
-      <div className="flex h-screen bg-gray-100 overflow-hidden">
-        <Sidebar />
+    <div className="flex h-screen bg-[#F8F9FC] overflow-hidden font-sans">
+      <Sidebar />
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <Navbar />
         <main className="flex-1 overflow-y-auto">
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -130,13 +136,14 @@ function AuthGate() {
             <Route path="/alerts" element={<ProtectedRoute page="alerts"><Alerts /></ProtectedRoute>} />
             <Route path="/holidays" element={<ProtectedRoute page="holidays"><HolidaySettings /></ProtectedRoute>} />
             <Route path="/shift-management" element={<ProtectedRoute page="shift-management"><ShiftManagement /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute page="dashboard"><Settings /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute page="settings"><Settings /></ProtectedRoute>} />
             {/* Add login and signup routes for unauthenticated users */}
             <Route path="/login" element={<SignIn onSignIn={() => navigate('/dashboard')} />} />
             <Route path="/signup" element={<SignUp onSignUp={() => setShowSignUp(false)} />} />
           </Routes>
         </main>
       </div>
+    </div>
   );
 }
 
