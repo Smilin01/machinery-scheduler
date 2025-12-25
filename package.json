@@ -1,5 +1,5 @@
 {
-  "name": "vite-react-typescript-starter",
+  "name": "optiflow",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -13,7 +13,7 @@
   },
   "build": {
     "appId": "com.yourcompany.yourapp",
-    "productName": "ManufacturingPro",
+    "productName": "OptiFlow",
     "files": [
       "dist/",
       "electron-main.cjs",

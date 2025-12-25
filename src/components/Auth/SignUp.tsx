@@ -60,7 +60,7 @@ export default function SignUp({ onSignUp }: { onSignUp?: () => void }) {
             <Sparkles size={40} className="text-white" />
           </div>
           <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">Create Account</h2>
-          <p className="text-gray-500 text-sm">Sign up to get started with Manufacturing Pro</p>
+          <p className="text-gray-500 text-sm">Sign up to get started with OptiFlow</p>
         </div>
         <form className="space-y-5" onSubmit={handleSubmit}>
           <div>

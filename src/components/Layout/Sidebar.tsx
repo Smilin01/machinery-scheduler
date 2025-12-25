@@ -152,10 +152,10 @@ const Sidebar: React.FC = () => {
       <div className="h-16 flex items-center px-6 border-b border-gray-100">
         <div className="flex items-center gap-3 overflow-hidden whitespace-nowrap">
           <div className="w-8 h-8 bg-[#F24E1E] rounded-lg flex items-center justify-center flex-shrink-0">
-            <span className="text-white font-bold text-lg">M</span>
+            <span className="text-white font-bold text-lg">O</span>
           </div>
           {!sidebarCollapsed && (
-            <span className="font-bold text-xl text-gray-900 tracking-tight">MANU<span className="font-normal">PRO</span></span>
+            <span className="font-bold text-xl text-gray-900 tracking-tight">OPTI<span className="font-normal">FLOW</span></span>
           )}
         </div>
       </div>
